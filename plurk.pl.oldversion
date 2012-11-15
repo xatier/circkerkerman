@@ -1,0 +1,355 @@
+#!/usr/bin/perl -CDS
+use Net::Plurk;
+use utf8;
+use Data::Dumper;
+use JSON;
+use Encode;
+use 5.012;
+
+my $key = '';
+my $secret = '';
+my $access_token = '';
+my $access_secret = '';
+
+# start to use Plurk api
+our $p = Net::Plurk->new(consumer_key => $key, 
+                        consumer_secret => $secret);
+
+$p->authorize(access_token => $access_token, 
+              access_token_secret => $access_secret);
+# get content for every function
+our @dict_get_last_resp;
+our @find_get_last_resp;
+our @date_get_last_resp;
+our @calc_get_last_resp;
+our @circ_get_last_resp;
+
+# which plurk is replurked
+our %red = {};
+# json obj from plurkAPI
+our $json;
+
+# an infinity loop
+while (1) {
+    
+    # get new plurks
+    $json = $p->callAPI('/APP/Polling/getPlurks', 
+                            offset => '2012-7-26T00:00:00', limit => 50);
+
+    # store json in this file for debug
+    open DBG, ">", "json";
+    print DBG Dumper (\$json);
+    close DBG;
+
+    
+    for my $k (@$json{plurks}) {
+        for (@$k) {
+            if ($_->{content_raw} =~ /^%Dict%:/i) {
+                push @dict_get_last_resp, [$_->{content_raw}, $_->{plurk_id}];
+            }
+
+            elsif ($_->{content_raw} =~ /^%Find%:/i) {
+                push @find_get_last_resp, [$_->{content_raw}, $_->{plurk_id}];
+            }
+            # find '%Date%' command
+            elsif ($_->{content_raw} =~ /^%date%/i ) {
+                push @date_get_last_resp, [$_->{content_raw}, $_->{plurk_id}];
+            }
+            elsif ($_->{content_raw} =~ /^%calc%:/i ) {
+                push @calc_get_last_resp, [$_->{content_raw}, $_->{plurk_id}];
+            }
+
+            # play with my db
+            else {
+                if (@circ_get_last_resp < 5) {
+                    push @circ_get_last_resp, [$_->{content_raw}, $_->{plurk_id}];
+                }
+            }
+        }
+    }
+    
+    # database of responsed plurk id
+    open LAST, "<", "lastresp";
+    my @last = <LAST>;
+    close LAST;
+
+    # using a hash to know which pid is responsed
+    for (@last) {
+        chomp;
+        $red{$_} = 1;
+    }
+
+    Date();
+    Calc();
+    Dict();
+    Find();
+    Kerkerman();
+
+    # take a break :D
+    sleep 1;
+}
+
+# look up ydict
+sub Dict {
+
+    open LAST, ">>", "lastresp";
+    for my $glr (@dict_get_last_resp) {
+        # this plurk hasn't been responsed
+        if ($red{$glr->[1]} != 1) {
+
+            # update info. in our db
+            say LAST "$glr->[1]";
+
+            say "Dict: $glr->[0], $glr->[1]";
+
+            # get the string which our user want to lookup
+            my $lookup = "\'" . substr ($glr->[0], 8) . "\'";
+            say "$lookup";
+
+            # chect it in ydict
+            my $result = `./ydict -c $lookup`;
+
+            # grep what i really want (Chinese part)
+            my $r = flter($result);
+            print @$r;
+
+            # results in ydict
+            for (@$r) {
+                $json = $p->callAPI('/APP/Responses/responseAdd', plurk_id => $glr->[1], 
+                        content => $_, qualifier => ':');
+            }
+
+            # i think these two API are useless XD
+            $json = $p->callAPI('/APP/Timeline/mutePlurks', ids => "[$glr->[1]]");
+            $json = $p->callAPI('/APP/Timeline/markAsRead', ids => "[$glr->[1]]");
+
+            say "done.";
+        }
+    }
+    close LAST;
+}
+
+sub flter {
+    # original result in ydict
+    my $res = shift;
+    my @lines = split /\n/, $res;
+    my @ret;
+    my $j;
+    my $ok = 0;
+    for (@lines) {
+        # n / v / vt / vi / prep / ad / a / pron
+        if(/^n\./ or /^v[it]?\./ or /^prep\./ or /^ad\./ or /^a\./ or /^pron\./) {
+            if ($ok >= 1) {
+                push @ret, $j;
+                $j = "";
+                $ok = 0;
+            }
+            $j .= "$_\n";
+        }
+        elsif (/\s\s\d+/) {
+            $j .= "$_\n";
+            $ok++;
+        }
+    }
+    push @ret, $j;
+    return \@ret;
+}
+
+# find someone's plurks contain keywords
+sub Find {
+    open LAST, ">>", "lastresp";
+
+    for my $glr (@find_get_last_resp) {
+        # this plurk hasn't been responsed
+        if ($red{$glr->[1]} != 1) {
+            
+            # update info. in our db
+            say LAST "$glr->[1]";
+
+            say "Find: $glr->[0], $glr->[1]";
+            
+            # user account and key word
+            my ($uacc, $keyword) = split(",", substr($glr->[0], 8));
+            say "$uacc => $keyword";
+
+            # get userid via API
+            $json = $p->callAPI('/APP/UserSearch/search', 
+                                 query => $uacc);
+            # userid
+            my $userid = $$json{users}[0]{id};
+
+            # get this user's plurk
+            $json = $p->callAPI('/APP/Timeline/getPublicPlurks', 
+                                user_id => $userid, limit => 50);
+
+            # to get the content, i need to play with suck json obj QQ
+            my @s;
+            my @r;
+            for (@$json{plurks}) {
+                push @s, @$_ if (defined @$_);
+            }
+            for (@s) {
+                # find contents which contains the keyword
+                my $cont = $_->{content_raw};
+                push @r, $cont if ($cont =~ /$keyword/);
+            }
+
+            # don't response itself
+            if ($r[0] eq $glr->[0]) {
+                shift @r;
+            }
+            
+            say for (@r);
+
+            for (@r) {
+                $json = $p->callAPI('/APP/Responses/responseAdd', plurk_id => $glr->[1], 
+                        content => $_, qualifier => ':');
+            }
+            # i think these two API are useless XD
+            $json = $p->callAPI('/APP/Timeline/mutePlurks', ids => "[$glr->[1]]");
+            $json = $p->callAPI('/APP/Timeline/markAsRead', ids => "[$glr->[1]]");
+
+            say "done.";
+        }
+    }
+    close LAST;
+}
+
+# what time is it?
+sub Date {
+
+    open LAST, ">>", "lastresp";
+
+    for my $glr (@date_get_last_resp) {
+        # this plurk hasn't been responsed
+        if ($red{$glr->[1]} != 1) {
+
+            # update info. in our db
+            say LAST "$glr->[1]";
+
+            my $r = "現在時間 => " . `date`;
+            
+            say "Date $r";
+
+            $json = $p->callAPI('/APP/Responses/responseAdd', plurk_id => $glr->[1], 
+                    content => $r, qualifier => ':');
+
+            # i think these two API are useless XD
+            $json = $p->callAPI('/APP/Timeline/mutePlurks', ids => "[$glr->[1]]");
+            $json = $p->callAPI('/APP/Timeline/markAsRead', ids => "[$glr->[1]]");
+
+            say "done.";
+        }
+    }
+    close LAST;
+}
+
+# calulator
+sub Calc {
+
+    open LAST, ">>", "lastresp";
+
+    for my $glr (@calc_get_last_resp) {
+        # this plurk hasn't been responsed
+        if ($red{$glr->[1]} != 1) {
+            # update info. in our db
+            say LAST "$glr->[1]";
+
+            my $expr = substr($glr->[0], 8);
+            say "Calc: \'$expr\'";
+
+            my $r;
+            if ($expr !~ /[a-z]/i) {
+                my $answer = ` echo '$expr' | bc`;
+
+                # if $answer is a number
+                if ($answer =~ /\d+/) {
+                    $r = $answer;
+                }
+                else {
+                    $r = "哭哭我算不出來 :'("
+                }
+            }
+            else {
+                $r = "哭哭我算不出來 :'("
+            }
+
+            
+            say "Calc =>   $expr = $r";
+
+            $json = $p->callAPI('/APP/Responses/responseAdd', plurk_id => $glr->[1], 
+                    content => $r, qualifier => ':');
+
+            # i think these two API are useless XD
+            $json = $p->callAPI('/APP/Timeline/mutePlurks', ids => "[$glr->[1]]");
+            $json = $p->callAPI('/APP/Timeline/markAsRead', ids => "[$glr->[1]]");
+
+            say "done.";
+        }
+    }
+    close LAST;
+}
+
+
+
+# the @circkerkerman bot
+sub Kerkerman {
+
+    open LAST, ">>", "lastresp";
+
+    for my $glr (@circ_get_last_resp) {
+        # this plurk hasn't been responsed
+        if ($red{$glr->[1]} != 1) {
+           
+            # update info. in our db
+            say LAST "$glr->[1]";
+
+            say "kerker: $glr->[0], $glr->[1]";
+            
+            # check our database
+            my $r =  dbSearch($glr->[0]);
+            say "kerkerman RE => $r"; 
+            # if not nothing
+            if ($r ne "") {
+                $json = $p->callAPI('/APP/Responses/responseAdd', plurk_id => $glr->[1], 
+                    content => $r, qualifier => ':');
+            }
+
+            # i think these two API are useless XD
+            $json = $p->callAPI('/APP/Timeline/mutePlurks', ids => "[$glr->[1]]");
+            $json = $p->callAPI('/APP/Timeline/markAsRead', ids => "[$glr->[1]]");
+
+            say "done.";
+        }
+
+        shift @circ_get_last_resp;
+    }
+    close LAST;
+}
+
+sub dbSearch {
+  open DB, "<", "db";
+  my $x = shift;
+  my @re;
+  repeat:
+  while (my $a = <DB>) {
+    if ($a =~ /= Begin ===========================/) {
+      my $y = <DB>;
+      chomp($y);
+      if ($x =~ $y) {
+        while (my $b = <DB>) {
+          if ($b =~ /= End =============================/) {
+            goto repeat;
+          }
+          push @re, $b;
+        }
+      }
+    }
+  }
+  close DB;
+  if (@re == 0) {
+    return "";
+  }
+  return (substr($re[int(rand @re)], 2));
+}
+
