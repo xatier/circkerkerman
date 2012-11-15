@@ -12,23 +12,23 @@
 
 ## functoins ##
 
-* Dictionary
+### Dictionary ###
 
 `%Dict%:word` 查 ydict 字典
 
-* date
+### date ###
 
 `%Date%` 查詢日期
 
-* Calculator
+### Calculator ###
 
 `%Cals:expressoin%` 簡單的計算機功能
 
-* Youtube search
+### Youtube search ###
 
 `想聽 XXX` Youtube 歌曲搜尋
 
-* random reply
+### random reply ###
 
 額外的關鍵字回噗功能，按照 db 文字檔定義的回應
 
