@@ -22,7 +22,7 @@
 
 ### Calculator ###
 
-`%Cals:expressoin%` 簡單的計算機功能
+`%Cals%:expressoin` 簡單的計算機功能
 
 ### Youtube search ###
 
