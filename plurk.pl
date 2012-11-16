@@ -229,8 +229,8 @@ sub Youtube {
 
     my @playlist = ();
     for (@$ref) {
-        if ($_->[0] =~ /watch\?v=.{11}/ and $_->[1] =~ /Watch Later/) {
-            push @playlist, $_->[0];
+        if ($_->url() =~ /watch\?v=.{11}/ and $_->text() =~ /Watch Later/) {
+            push @playlist, $_->url_abs();
         }
         last if (@playlist == 3);
     }
@@ -240,9 +240,9 @@ sub Youtube {
                              content => '@circkerkerman 為您帶來:', 
                              qualifier => ':');
         for (@playlist) {
-            say "http://www.youtube.com$_";
+            say;
             $json = $p->callAPI('/APP/Responses/responseAdd', plurk_id => $_[1], 
-                                 content => "http://www.youtube.com$_", 
+                                 content => $_, 
                                  qualifier => ':');
         }
     }
