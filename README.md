@@ -47,6 +47,9 @@
 
 兩個官方的 python 範例，目前 circkerkerman 每三小時的報時是透過 plurk.py + crontab 完成
 
+###  weather.py ###
+
+透過 w3m 去爬 yahoo 的氣象
 ### db ###
 
 回噗詞庫
