@@ -13,6 +13,7 @@ plurk.authorize('', '')
 
 def bot ():
     plurk.callAPI('/APP/Timeline/plurkAdd', {'content' : 'i want karma!!', 'qualifier' : ':'})
+    plurk.callAPI('/APP/Alerts/addAllAsFriends')
 
 if __name__ == '__main__' :
     bot()
