@@ -93,6 +93,10 @@ while (1) {
         elsif ($_->[0] =~ /^((點歌)|(想聽))/ ) {
             Youtube($_->[0], $_->[1]);
         }
+        # xiami.com
+        elsif ($_->[0] =~ /^((蝦米)|(xiami))/ ) {
+            xiami($_->[0], $_->[1]);
+        }
         # play with my db  XD
         Kerkerman($_->[0], $_->[1]);
     }
@@ -100,9 +104,17 @@ while (1) {
     
     for (@new_response) {
         say "response ==> $_->[0] , id: $_->[1] : $_->[2] 樓";
-        if ($_->[2] == 4 and int rand time % 2) {
-            my @fifth_floor = ("五樓！", "五樓！(dance)", "潮爽的撿到五樓ㄌ :P",
-                              "五樓~ (banana_rock)", "我是專業的五樓！(haha)");
+        if ($_->[2] == 4 and int rand time % 10000 < 6500) {
+            my @fifth_floor = ("五樓！", "五樓！(dance)",
+                               "潮爽的撿到五樓ㄌ :P",
+                               "五樓~ (banana_rock)", 
+                               "我是專業的五樓！(haha)",
+                               "人在五樓，身不由己", 
+                               "五樓的高度就是不一樣 (banana_rock)",
+                               "安安五樓",
+                               "根據台灣主計處的年度調查，批踢踢的專業資深成員，大多住在五樓。"
+                          );
+
             $p->callAPI('/APP/Responses/responseAdd', plurk_id => $_->[1], 
                     content => $fifth_floor[int rand time % @fifth_floor]
                     , qualifier => ':');
@@ -248,6 +260,29 @@ sub Youtube {
     }
 }
 
+
+sub xiami {
+    my $mech = WWW::Mechanize->new();
+    $_[0] =~ s/蝦米//;
+    $_[0] =~ s/xiami//;
+    my $url = "http://www.xiami.com/search?key=$_[0]";
+    say $url;
+
+    $mech->get( $url );
+    my $ref = $mech->find_all_links( url_regex => qr/song\/showcollect\/id\/\d+/i );
+
+    if (@$ref > 0) {
+        $json = $p->callAPI('/APP/Responses/responseAdd', plurk_id => $_[1], 
+                             content => '@circkerkerman 為您帶來:', 
+                             qualifier => ':');
+        for (@$ref) {
+            say $_->text() . "\n" . $_->url_abs();
+            $json = $p->callAPI('/APP/Responses/responseAdd', plurk_id => $_[1], 
+                                 content => $_->text() . "\n" . $_->url_abs(), 
+                                 qualifier => ':');
+        }
+    }
+}
 
 # the @circkerkerman bot
 sub Kerkerman {
