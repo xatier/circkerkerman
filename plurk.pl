@@ -59,7 +59,7 @@ while (1) {
                     say $msg_hash->{content_raw} . "\n" . 
                         "pid: $msg_hash->{plurk_id}";
                     say "已轉噗，不解釋";
-                    next;
+                    goto cont;
                 }
                 push @new_plurk, [$msg_hash->{content_raw},
                                   $msg_hash->{plurk_id}];
@@ -72,7 +72,7 @@ while (1) {
                         "$msg_hash->{response_count} 樓 / " .
                         "pid: $msg_hash->{response}{plurk_id}";
                     say "已轉噗，不解釋";
-                    next;
+                    goto cont;
                 }
                 push @new_response, [$msg_hash->{response}{content_raw},
                                      $msg_hash->{response}{plurk_id},
@@ -140,6 +140,7 @@ while (1) {
         }
     }
 
+cont:
     say "== cont. =================";
     sleep 1;
 }
