@@ -55,12 +55,25 @@ while (1) {
             if ($msg_hash->{type} eq 'new_plurk') {
                 my $owner_id = $msg_hash->{user_id};
                 say "owner id: $owner_id";
+                if ($msg_hash->{replurkers_count} != 0) {
+                    say $msg_hash->{content_raw} . "\n" . 
+                        "pid: $msg_hash->{plurk_id}";
+                    say "已轉噗，不解釋";
+                    next;
+                }
                 push @new_plurk, [$msg_hash->{content_raw},
                                   $msg_hash->{plurk_id}];
             }
             elsif ($msg_hash->{type} eq 'new_response') {
                 my $responser_id = $msg_hash->{response}{user_id};
                 say "responser id: $responser_id  / $msg_hash->{user}{$responser_id}{nick_name}";
+                if ($msg_hash->{plurk}{replurkers_count} != 0) {
+                    say $msg_hash->{response}{content_raw} . "\n" . 
+                        "$msg_hash->{response_count} 樓 / " .
+                        "pid: $msg_hash->{response}{plurk_id}";
+                    say "已轉噗，不解釋";
+                    next;
+                }
                 push @new_response, [$msg_hash->{response}{content_raw},
                                      $msg_hash->{response}{plurk_id},
                                      $msg_hash->{response_count}];
@@ -104,7 +117,7 @@ while (1) {
     
     for (@new_response) {
         say "response ==> $_->[0] , id: $_->[1] : $_->[2] 樓";
-        if ($_->[2] == 4 and int rand time % 10000 < 6500) {
+        if ($_->[2] == 4 and int rand time % 10000 < 4500) {
             my @fifth_floor = ("五樓！", "五樓！(dance)",
                                "潮爽的撿到五樓ㄌ :P",
                                "五樓~ (banana_rock)", 
@@ -112,8 +125,10 @@ while (1) {
                                "人在五樓，身不由己", 
                                "五樓的高度就是不一樣 (banana_rock)",
                                "安安五樓",
+                               ("http://emos.plurk.com/d1cd47f003572d7c2c8fb700ffd73258_w47_h47.gif"x5)."五樓",
                                "根據台灣主計處的年度調查，批踢踢的專業資深成員，大多住在五樓。"
                           );
+            select undef, undef, undef, 0.25;
 
             $p->callAPI('/APP/Responses/responseAdd', plurk_id => $_->[1], 
                     content => $fifth_floor[int rand time % @fifth_floor]
