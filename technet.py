@@ -15,7 +15,7 @@ def bot ():
     p = os.popen('date "+%F, %A"')
     j = plurk.callAPI('/APP/Timeline/plurkAdd', 
             {'content' : p.readline() + 
-             ' Technet.tw Geek Calender | 程式/設計宅民曆', 
+             ' Technet.tw Geek Calender | 程式/設計宅民曆',
              'qualifier' : ':'})
     p.close()
 
@@ -39,14 +39,14 @@ def bot ():
             c = 1
             continue
         elif line == "忌\n" or line == "程式小格言\n":
-            plurk.callAPI('/APP/Responses/responseAdd', 
+            plurk.callAPI('/APP/Responses/responseAdd',
                     {'plurk_id' : pid,
                      'content' : s,
                      'qualifier' : ':'})
             print s
             s = line[:-1] + "："
         elif c == 0:
-            plurk.callAPI('/APP/Responses/responseAdd', 
+            plurk.callAPI('/APP/Responses/responseAdd',
                     {'plurk_id' : pid,
                       'content' : line,
                       'qualifier' : ':'})
@@ -54,7 +54,7 @@ def bot ():
         elif c == 1:
             s += line[:-1]
 
-    plurk.callAPI('/APP/Responses/responseAdd', 
+    plurk.callAPI('/APP/Responses/responseAdd',
             {'plurk_id' : pid,
              'content' : s,
              'qualifier' : ':'})
