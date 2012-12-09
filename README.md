@@ -53,6 +53,10 @@
 
 透過 w3m 去爬 yahoo 的氣象
 
+### technet.py ###
+
+爬 technet.tw 的宅宅農民曆
+
 ###  news.pl ###
 
 去爬 solidot.org 的新聞，以後可能會新增去爬更多網站
