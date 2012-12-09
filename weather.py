@@ -21,7 +21,9 @@ def bot ():
     if pid is None:
         return
 
-    os.system('w3m -dump http://tw.weather.yahoo.com/today.html | awk \'{print $1 $2 $3 $4}\' | grep -P "\[\d\d\]" | sed -e \'s/\[..\]/ /\'> w')
+    os.system('w3m -dump http://tw.weather.yahoo.com/today.html | '
+              'awk \'{print $1 $2 $3 $4}\' | grep -P "\[\d\d\]" | '
+              'sed -e \'s/\[..\]/ /\'> w')
 
     c = 0
     s = ""
@@ -33,16 +35,18 @@ def bot ():
             c += 1
         else:
             plurk.callAPI('/APP/Responses/responseAdd', 
-                    {'plurk_id' : str(pid),
+                    {'plurk_id' : pid,
                      'content' : s,
                      'qualifier' : ':'})
             s = ""
             c = 0
 
     plurk.callAPI('/APP/Responses/responseAdd', 
-            {'plurk_id' : str(pid),
+            {'plurk_id' : pid,
               'content' : s,
               'qualifier' : ':'})
+
+    f.close()
 
 
 if __name__ == '__main__' :
