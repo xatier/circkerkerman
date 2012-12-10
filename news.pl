@@ -22,7 +22,7 @@ $p->authorize(access_token => $access_token,
               access_token_secret => $access_secret);
 
 my $json = $p->callAPI('/APP/Timeline/plurkAdd',
-                        content => 'Today\'s Solidot News', qualifier => ':');
+                        content => 'Today\'s News', qualifier => ':');
 
 my $pid =  $json->{plurk_id};
 
@@ -63,4 +63,5 @@ for (@news_queue) {
 
     sleep 1;
 }
+
 
