@@ -29,27 +29,38 @@ my $pid =  $json->{plurk_id};
 # new Mechanize
 my $mech = WWW::Mechanize->new();
 
+##########################################
+# solidor.org                            #
+##########################################
 $mech->get( "http://www.solidot.org/" );
 
-# find news id like this =>  http://www.solidot.org/story?sid=32554
+# => http://www.solidot.org/story?sid=32554
 my $ref = $mech->find_all_links( url_regex => qr/story\?sid=\d{5}$/);
 
-# get absolute links
-my @news = map { $_->url_abs() } @$ref;
+# get first 6 news's url
+my @news_queue = ( uniq( reverse sort map { $_->url_abs() } @$ref ) )[0 .. 5];
 
-# get first 15 news
-@news = ( uniq( reverse sort @news ) )[0 .. 14];
+##########################################
+# 36kr.com                               #
+##########################################
+$mech->get( "http://www.36kr.com" );
+
+# => http://www.36kr.com/p/200075.html
+$ref = $mech->find_all_links( url_regex => qr/p\/\d{6}.html$/);
+
+push @news_queue, (uniq( reverse sort map { $_->url_abs() } @$ref ) )[0 .. 5];
 
 
 # this is a really idot method to get news title XD
-for (@news) {
+for (@news_queue) {
     $mech->get($_);
     $p->callAPI('/APP/Responses/responseAdd', plurk_id => $pid,
-                content => $_ . "\n" . $mech->title(),
+                content => $mech->title() . "\n" . $_,
                 qualifier => ':');
 
     say $_ . "\n" . $mech->title();
     say "==";
 
-    select undef, undef, undef, 0.5;
+    sleep 1;
 }
+
