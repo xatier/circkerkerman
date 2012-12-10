@@ -59,7 +59,7 @@
 
 ###  news.pl ###
 
-去爬 solidot.org 的新聞，以後可能會新增去爬更多網站
+去爬 solidot.org 和 36kr.com的新聞，以後可能會新增去爬更多網站
 
 ### db ###
 
