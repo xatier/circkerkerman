@@ -117,7 +117,9 @@ while (1) {
     
     for (@new_response) {
         say "response ==> $_->[0] , id: $_->[1] : $_->[2] 樓";
-        if ($_->[2] == 4 and int rand time % 10000 < 4500) {
+        #if ($_->[2] == 4 and int rand time % 10000 < 1500) {
+        # delete the fifth floor function
+        if (1 == 0) {
             my @fifth_floor = ("五樓！", "五樓！(dance)",
                                "潮爽的撿到五樓ㄌ :P",
                                "五樓~ (banana_rock)", 
