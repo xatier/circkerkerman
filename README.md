@@ -61,6 +61,12 @@
 
 去爬 solidot.org 和 36kr.com的新聞，以後可能會新增去爬更多網站
 
+此功能已被 rss.pl 取代
+
+###  rss.pl ###
+
+get RSS feeds of some news sites and blogs
+
 ### db ###
 
 回噗詞庫
